@@ -10,19 +10,28 @@ from datetime import datetime
 
 @st.cache_data
 
+# Função para o carregamento dos dados a serem analisados.
+
 def _f_load_data():
     _response = requests.get("https://labdados.com/produtos")
     _api_data = pd.DataFrame.from_dict(_response.json())
     _api_data["Data da Compra"] = pd.to_datetime(_api_data["Data da Compra"], format="%d/%m/%Y")
     return _api_data
 
+# Função para conversão dos dados para o formsto .csv.
+
 def _f_converts_csv(data):
     return data.to_csv(index = False).encode('utf-8')
+
 
 def _f_sucess_message():
     sucesso = st.success('Table download sucessful.', icon = "✅")
     time.sleep(5)
     sucesso.empty()
+
+# Iniciando o carregamento dos dados do projeto - Dados de Produtos.
+
+_raw_data = _f_load_data()
 
 # Início da página do app Hawk Store - Sales Dashboard.
 # Dados brutos.
@@ -36,20 +45,11 @@ st.markdown("<p style='text-align: center; color: gray; margin-top: 0px;'>By: Cr
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Carregamento dos dados do projeto - Dados de Produtos.
-
-# _url_data = "https://labdados.com/produtos"
-
-# _response = requests.get(_url_data)
-
-# _raw_data = pd.DataFrame.from_dict(_response.json())
-# _raw_data["Data da Compra"] = pd.to_datetime(_raw_data["Data da Compra"], format="%d/%m/%Y")
-
-_raw_data = _f_load_data()
-
-# Tabela de produtos. 
+# Título e cabeçalho da página. 
 
 st.markdown("<h4 style='text-align: center;'>Raw Data - Product Information</h4>", unsafe_allow_html=True,)
+
+# Filtros para consultas aos dados brutos.
 
 with st.expander("Columns"):
     _columns = st.multiselect("Select columns", list(_raw_data.columns), list(_raw_data.columns))
@@ -90,6 +90,8 @@ with st.sidebar.expander('Payment type'):
 with st.sidebar.expander('Number of installments'):
      _number_of_installments = st.slider('Select number of installments', 1, 24, (1,24))
 
+# Filtro customizado após escolha dos parâmetros da consulta.
+
 _query = '''
     Produto in @_products and \
     `Categoria do Produto` in @_category and \
@@ -103,12 +105,26 @@ _query = '''
     @_number_of_installments[0] <= `Quantidade de parcelas` <= @_number_of_installments[1]
  '''
 
+# Executando consulta após dados customizados.
+
 _filtered_data = _raw_data.query(_query)
 _filtered_data = _filtered_data[_columns]
 
+# Apresentando dados filtrados após consultas.
+
 st.dataframe(_filtered_data)
 
-st.markdown(f"Result: **:orange[{_filtered_data.shape[0]}]** lines e **:orange[{_filtered_data.shape[1]}]** columns.")
+# Resumo da consulta.
+
+_color = "#708090"  # também funciona "rgb(255, 107, 0)"
+
+st.markdown(
+    f"Result: <b><span style='color:{_color}'>{_filtered_data.shape[0]}</span></b> lines e "
+    f"<b><span style='color:{_color}'>{_filtered_data.shape[1]}</span></b> columns.",
+    unsafe_allow_html=True,
+)
+
+# Opção de download dos dados exibidos na consulta customizada.
 
 st.markdown("File name")
 _column1, _column2 = st.columns(2)
